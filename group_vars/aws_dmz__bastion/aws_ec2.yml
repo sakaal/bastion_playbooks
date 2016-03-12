@@ -1,0 +1,6 @@
+---
+#file: group_vars/aws_eu-west-1_dmz__bastion/aws_ec2.yml
+
+ec2_instance_type: t2.micro
+ec2_image: "{{ aws_ec2_images.hvm_64b_centos_7 | mandatory }}"
+ec2_group: Bastion

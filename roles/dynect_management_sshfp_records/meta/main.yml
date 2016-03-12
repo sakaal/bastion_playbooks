@@ -1,0 +1,5 @@
+---
+# file: roles/dynect_management_sshfp_records/meta/main.yml
+
+dependencies:
+- dynect_session

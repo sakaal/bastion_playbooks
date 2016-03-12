@@ -1,0 +1,21 @@
+---
+# file: aws_ec2.yml
+#
+# Manages AWS EC2 instances. Usually run as:
+#
+# ansible-playbook -v aws_ec2.yml -i hosts
+#
+# We keep sensitive data on a separate persistent encrypted volume
+# that is attached after launch.  Some versions of Ansible have a
+# bug that prevents the ec2 module from launching an instance with
+# encrypted root volume.
+#
+
+- name: Instances
+  hosts: bastion
+  gather_facts: no
+  roles:
+  - aws_ec2_instance
+  - dynect_management_dns_record
+  - dynect_management_sshfp_records
+  - aws_ec2_ebs

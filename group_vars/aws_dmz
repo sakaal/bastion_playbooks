@@ -1,0 +1,12 @@
+---
+# file: group_vars/aws_dmz
+#
+# AWS DMZ tiers
+#
+
+ec2_assign_public_ip: yes
+
+#
+# The aws_vpc_subnets are defined per region in group_vars/aws_{{ region }}/aws_vpc.yml
+#
+ec2_vpc_subnet_id: "{{ aws_vpc_subnets.dmz[ ec2_availability_zone ] | mandatory }}"

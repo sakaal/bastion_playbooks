@@ -1,0 +1,31 @@
+---
+# file: roles/dynect_session/tasks/main.yml
+
+# DynECT DNS API session management
+
+- name: Resolve the management DNS zone
+  when: management_dns_zone is not defined
+  set_fact: management_dns_zone="{{ inventory_hostname | lower | regex_replace(
+            '^(.+)\\.(([a-z0-9]|[a-z0-9][a-z0-9-]{0,61}[a-z0-9])\\.([a-z0-9]|[a-z0-9][a-z0-9-]{0,61}[a-z0-9]))$',
+            '\\2' ) }}"
+
+- name: Establish a DynECT API session
+  local_action: >
+                uri method=POST
+                url="{{ dynect_api_url | mandatory }}/Session/"
+                HEADER_Content-Type="application/json"
+                body='{
+                "customer_name": "{{ dynect_api_customer | mandatory }}",
+                "user_name": "{{ dynect_api_user | mandatory }}",
+                "password": "{{ dynect_api_password | mandatory }}"
+                }'
+                return_content=yes
+  register: dynect_session_result
+  changed_when: True
+  notify: End DynECT session
+
+- name: Set the DynECT API session as a fact
+  when: dynect_session_result|success and
+        "success" == dynect_session_result.json.status
+  set_fact:
+    dynect_session_token: "{{ dynect_session_result.json.data.token | mandatory }}"

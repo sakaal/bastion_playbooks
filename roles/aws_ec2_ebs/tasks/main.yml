@@ -1,0 +1,7 @@
+---
+# file: roles/aws_ec2_ebs/tasks/main.yml
+
+- name: AWS EC2 Elastic Block Storage (EBS) volumes
+  when: ec2_ebs_volumes is defined and
+        ec2_ebs_volumes | length > 0
+  include: volumes.yml

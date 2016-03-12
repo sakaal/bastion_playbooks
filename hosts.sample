@@ -1,0 +1,58 @@
+# file: hosts
+
+#
+# General tiers
+#
+
+[bastion:children]
+aws_dmz__bastion
+
+#
+# Hosting providers
+#
+
+[aws:children]
+aws_eu-west-1
+
+#
+# AWS regions
+#
+
+[aws_eu-west-1:children]
+aws_eu-west-1a_dmz
+aws_eu-west-1b_dmz
+aws_eu-west-1c_dmz
+
+#
+# AWS tiers
+#
+
+[aws_dmz:children]
+aws_dmz__bastion
+
+[aws_dmz__bastion:children]
+aws_eu-west-1a_dmz__bastion
+aws_eu-west-1b_dmz__bastion
+aws_eu-west-1c_dmz__bastion
+
+#
+
+[aws_eu-west-1a_dmz:children]
+aws_eu-west-1a_dmz__bastion
+
+[aws_eu-west-1a_dmz__bastion]
+
+#
+
+[aws_eu-west-1b_dmz:children]
+aws_eu-west-1b_dmz__bastion
+
+[aws_eu-west-1b_dmz__bastion]
+
+#
+
+[aws_eu-west-1c_dmz:children]
+aws_eu-west-1c_dmz__bastion
+
+[aws_eu-west-1c_dmz__bastion]
+#bastion.eu-west-1.example.com ec2_state=running ansible_ssh_user="{{ ec2_image.user | mandatory }}"

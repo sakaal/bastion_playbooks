@@ -1,0 +1,164 @@
+---
+# file: roles/aws_ec2_instance/tasks/main.yml
+#
+# Provision an Amazon Web Services (AWS) Elastic Compute Cloud (EC2) instance
+#
+
+- name: AWS EC2 access credentials
+  assert:
+    that:
+    - aws_access_key is defined
+    - aws_secret_key is defined
+    - ec2_key_pair_name is defined
+
+- name: AWS EC2 image
+  assert:
+    that:
+    - ec2_image is defined
+    - ec2_image.ami_id is defined
+    - ec2_image.user is defined
+
+- name: AWS EC2 instance provisioining
+  assert:
+    that:
+    - ec2_state in ['absent', 'running', 'stopped']
+
+- name: AWS EC2 Elastic IP allocation
+  assert:
+    that:
+    - ec2_elastic_ip is defined
+    - ec2_elastic_ip.public_ip | ipv4
+    - ec2_elastic_ip.allocation_id is defined
+
+- name: AWS Region Endpoint
+  assert:
+    that:
+    - ec2_region is defined
+    - ec2_availability_zone is defined
+
+- name: Manage existing EC2 instances
+  when: ansible_ec2_instance_id is defined
+  local_action:
+    module: ec2
+    aws_access_key:         "{{ aws_access_key | mandatory }}"
+    aws_secret_key:         "{{ aws_secret_key | mandatory }}"
+    instance_ids:         [ "{{ ansible_ec2_instance_id | mandatory }}" ]
+    key_name:               "{{ ec2_key_pair_name | mandatory }}"
+    region:                 "{{ ec2_region | mandatory }}"
+    state:                  "{{ ec2_state | mandatory }}"
+    vpc_subnet_id:          "{{ ec2_vpc_subnet_id | default(omit) }}"
+    wait:                   yes
+
+- name: EC2 Spot Request wait timeout
+  when: ec2_spot_price is defined and
+        ec2_spot_wait_timeout is not defined
+  set_fact:
+    ec2_spot_wait_timeout: 600
+
+- name: Wait for AWS EC2 Spot Instances
+  when: ec2_spot_price is defined
+  run_once: yes
+  debug:
+    msg: "The AWS EC2 Spot Request wait timeout is {{ ec2_spot_wait_timeout }} s."
+
+- name: Launch EC2 instances
+  when: ansible_ec2_instance_id is not defined and
+        ec2_state in ['present', 'running']
+  local_action:
+    module: ec2
+    aws_access_key:         "{{ aws_access_key | mandatory }}"
+    aws_secret_key:         "{{ aws_secret_key | mandatory }}"
+    count_tag:
+      CM_Class:   bastion
+      CM_AZ:      "{{ ec2_availability_zone | mandatory }}"
+    ebs_optimized:          "{{ ec2_ebs_optimized | default(omit) }}"
+    exact_count:            1
+    group:                  "{{ ec2_group | default(omit) }}"
+    group_id:               "{{ ec2_group_id | default(omit) }}"
+    image:                  "{{ ec2_image.ami_id | mandatory }}"
+    instance_type:          "{{ ec2_instance_type | mandatory }}"
+    instance_tags:
+      CM_Class:   bastion
+      CM_AZ:      "{{ ec2_availability_zone | mandatory }}"
+      Name:       "{{ inventory_hostname }}"
+      Owner:      "{{ ec2_key_pair_name | mandatory }}"
+      Purpose:    "Bastion host"
+    key_name:               "{{ ec2_key_pair_name | mandatory }}"
+    monitoring:             no
+    region:                 "{{ ec2_region | mandatory }}"
+    spot_price:             "{{ ec2_spot_price | default(omit) }}"
+    spot_type:              "{{ ec2_spot_type | default(omit) }}"
+    spot_wait_timeout:      "{{ ec2_spot_wait_timeout | default(omit) }}"
+    tenancy:                "{{ ec2_tenancy | default('default') }}"
+    user_data:              "{{ ec2_user_data | default(omit) }}"
+    volumes:
+    - device_name: /dev/sda1
+      volume_type: gp2
+      volume_size: "{{ ec2_image.size | mandatory }}"
+      encrypted: no
+      delete_on_termination: yes
+    vpc_subnet_id:          "{{ ec2_vpc_subnet_id | default(omit) }}"
+    wait:                   yes
+  register: ec2_result
+
+- name: EC2 instance launch result
+  when: not ec2_result|skipped
+  debug: msg="{{ ec2_result.instances }}"
+
+- name: Assign Elastic IP
+  with_items: ec2_result.instances | default([])
+  local_action:
+    module: ec2_eip
+    aws_access_key: "{{ aws_access_key | mandatory }}"
+    aws_secret_key: "{{ aws_secret_key | mandatory }}"
+    in_vpc:         "{{ True if ec2_vpc_subnet_id is defined else False }}"
+    instance_id:    "{{ item.id | mandatory }}"
+    public_ip:      "{{ ec2_elastic_ip.public_ip | mandatory }}"
+    region:         "{{ ec2_region | mandatory }}"
+
+- name: Connect via the Elastic IP assigned on launch
+  set_fact: ansible_ssh_host="{{ ec2_elastic_ip.public_ip | mandatory }}"
+            ansible_ssh_port=22
+            ansible_ssh_user="{{ ec2_image.user | mandatory }}"
+
+- name: Locally remove previous SSH known host keys
+  with_items: ec2_result.instances | default([])
+  local_action: known_hosts
+                host="{{ hostvars[ inventory_hostname ].ansible_ssh_host }}"
+                state=absent
+
+#
+# We cannot use the Ansible wait_for module, because it does not use the
+# SSH client configuration and therefore does not work with SSH tunnels etc.
+#
+- name: Wait for the SSH server
+  local_action: command ssh -A
+                -o StrictHostKeyChecking=no
+                -o PasswordAuthentication=no
+                {{ hostvars[ inventory_hostname ].ansible_ssh_user | mandatory
+                }}@{{ ansible_ssh_host }}
+                echo hello
+  register: ssh_echo
+  retries: 20
+  delay: 10
+  until: ssh_echo.stdout.find('hello') != -1
+  changed_when: no
+
+- name: Manage hostname
+  become: yes
+  hostname: name={{ inventory_hostname }}
+
+- setup:
+
+- ec2_facts:
+
+- name: Collect SSH server key fingerprints for SSHFP records
+  local_action: command ssh -A
+                -o StrictHostKeyChecking=no
+                -o PasswordAuthentication=no
+                {{ hostvars[ inventory_hostname ].ansible_ssh_user | mandatory
+                }}@{{ ansible_ssh_host }}
+                ssh-keygen -r {{ inventory_hostname }}
+  register: sshfp_records
+  changed_when: False
+  failed_when: sshfp_records.rc != 0

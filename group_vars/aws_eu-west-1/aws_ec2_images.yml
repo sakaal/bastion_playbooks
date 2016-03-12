@@ -1,0 +1,30 @@
+---
+# file: group_vars/aws_eu-west-1/aws_ec2_images.yml
+
+#
+# AWS Region EU Ireland AMIs
+#
+
+#
+# You must accept the terms of each AMI you use from the AWS Marketplace
+# via the AWS Marketplace website before you add their AMI IDs here.
+#
+aws_ec2_images:
+  #
+  # EU Ireland CentOS 7 x86_64 HVM minimal with Updates AMI
+  hvm_64b_centos_7:
+    ami_id: "ami-7abd0209"
+    size: 8
+    user: centos
+  #
+  # EU Ireland HVM (SSD) EBS-Backed 64-bit Amazon Linux AMI 2015.09.1
+  hvm_ebs_64b_amzn_2015091:
+    ami_id: "ami-bff32ccc"
+    size: 8
+    user: ec2-user
+  #
+  # EU Ireland PV EBS-Backed 64-bit Amazon Linux AMI 2015.09 (Spot t1.micro)
+  pv_ebs_64b_amzn_201509:
+    ami_id: "ami-a3be93d4"
+    size: 8
+    user: ec2-user

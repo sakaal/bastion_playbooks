@@ -1,0 +1,18 @@
+---
+# file: group_vars/aws_eu-west-1/aws_vpc.yml
+
+#
+# AWS Region EU Ireland
+#
+
+ec2_region: eu-west-1
+
+aws_vpc_subnets:
+#  dmz:
+#    eu-west-1a: subnet-########
+#    eu-west-1b: subnet-########
+#    eu-west-1c: subnet-########
+
+trusted_networks:
+#- desc: "NAT gateway public IP"
+#  cidr: #.#.#.#/32

@@ -1,0 +1,128 @@
+---
+# file: roles/aws_ec2_ebs/tasks/volumes.yml
+
+- name: Validate EC2 EBS volume configuration
+  with_items: ec2_ebs_volumes | default([])
+  assert:
+    that:
+    - item.purpose is defined
+    - item.device_name is defined
+    - item.device_actual is defined
+    - item.mount_point is defined
+    - item.state is defined
+    - item.volume_size is defined
+    - item.volume_type is defined
+
+- name: Create EC2 EBS volumes
+  with_items: ec2_ebs_volumes | default([])
+  when: item.state == 'present' and
+        ( item.id is not defined or item.id.strip() == "" )
+  ec2_vol:
+    aws_access_key: "{{ aws_access_key | mandatory }}"
+    aws_secret_key: "{{ aws_secret_key | mandatory }}"
+    device_name: "{{ item.device_name | mandatory }}"
+    encrypted: "{{ item.encrypted | default('no') }}"
+    instance: "{{ ansible_ec2_instance_id | mandatory }}"
+    iops: "{{ item.iops | default(omit) }}"
+    region: "{{ ec2_region | mandatory }}"
+    state: "{{ item.state | default('present') }}"
+    volume_size: "{{ item.volume_size | int | mandatory }}"
+    volume_type: "{{ item.volume_type | default('gp2') }}"
+  register: aws_ec2_ebs_volumes
+
+- name: Tag newly created EBS volumes
+  when: not aws_ec2_ebs_volumes|skipped and
+        item.volume_id is defined
+  with_items: aws_ec2_ebs_volumes.results
+  ec2_tag:
+    aws_access_key: "{{ aws_access_key | mandatory }}"
+    aws_secret_key: "{{ aws_secret_key | mandatory }}"
+    region: "{{ ec2_region | mandatory }}"
+    resource: "{{ item.volume_id | mandatory }}"
+    state: present
+    tags:
+      Name: "{{ inventory_hostname }}:{{ item.device | mandatory }}"
+      Purpose: "{{ item.purpose | mandatory }}"
+      mount_point: "{{ item.item.mount_point | mandatory }}"
+
+- name: Tag existing EBS volumes
+  with_items: ec2_ebs_volumes | default([])
+  when: item.state == 'present' and
+        item.id is defined and item.id.strip() != "" and
+        item.mount_point is defined
+  ec2_tag:
+    aws_access_key: "{{ aws_access_key | mandatory }}"
+    aws_secret_key: "{{ aws_secret_key | mandatory }}"
+    region: "{{ ec2_region | mandatory }}"
+    resource: "{{ item.id | mandatory }}"
+    state: present
+    tags:
+      Name: "{{ inventory_hostname }}:{{ item.device_name | mandatory }}"
+      Purpose: "{{ item.purpose | mandatory }}"
+      mount_point: "{{ item.mount_point | mandatory }}"
+
+- name: Attach existing EC2 EBS volumes
+  with_items: ec2_ebs_volumes | default([])
+  when: item.state == 'present' and
+        (( item.id is defined and item.id.strip() != "" ) or
+        ( item.name is defined and item.name.strip() != "" ))
+  ec2_vol:
+    aws_access_key: "{{ aws_access_key | mandatory }}"
+    aws_secret_key: "{{ aws_secret_key | mandatory }}"
+    device_name: "{{ item.device_name | mandatory }}"
+    id: "{{ item.id | default(omit) }}"
+    name: "{{ item.name | default(omit) }}"
+    instance: "{{ ansible_ec2_instance_id | mandatory }}"
+    iops: "{{ item.iops | default(omit) }}"
+    region: "{{ ec2_region | mandatory }}"
+    state: "{{ item.state | default('present') }}"
+  register: aws_ec2_ebs_volumes
+
+#
+# Depending on the OS and virtualization type, a requested device name
+# like /dev/sdf may be renamed by kernel to /dev/xvdf
+#
+# http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-using-volumes.html
+#
+
+- name: Check the requested device name
+  with_items: ec2_ebs_volumes | default([])
+  when: item.state == 'present'
+  stat: path="{{ item.device_name | mandatory }}"
+  register: aws_ec2_ebs_device_names
+
+- name: Check the suggested actual device name
+  when: not aws_ec2_ebs_device_names|skipped and
+        item.stat is defined and not item.stat.exists
+  with_items: aws_ec2_ebs_device_names.results
+  stat: path="{{ item.item.device_actual | mandatory }}"
+  register: aws_ec2_ebs_device_actual
+
+- name: Link requested device name to the actual device
+  when: not aws_ec2_ebs_device_actual|skipped and
+        item.stat is defined and item.stat.exists
+  with_items: aws_ec2_ebs_device_actual.results
+  become: yes
+  file: state=link
+        src="{{ item.item.item.device_actual | mandatory }}"
+        path="{{ item.item.item.device_name | mandatory }}"
+
+#
+# File system
+#
+
+- name: File system
+  with_items: ec2_ebs_volumes | default([])
+  when: item.state == 'present'
+  become: yes
+  filesystem: fstype="{{ item.fstype | default('ext4') }}"
+              dev="{{ item.device_name | mandatory }}"
+
+- name: Mount
+  with_items: ec2_ebs_volumes | default([])
+  when: item.state == 'present'
+  become: yes
+  mount: name="{{ item.mount_point | mandatory }}"
+         src="{{ item.device_name }}"
+         fstype="{{ item.fstype | default('ext4') }}"
+         state=mounted

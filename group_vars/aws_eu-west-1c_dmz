@@ -1,0 +1,4 @@
+---
+# file: group_vars/aws_eu-west-1c_dmz
+
+ec2_availability_zone: eu-west-1c

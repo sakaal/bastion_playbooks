@@ -1,0 +1,38 @@
+---
+# file: roles/dynect_management_sshfp_records/tasks/main.yml
+
+#
+# Some other role must set the sshfp_records before applying this role.
+#
+
+- name: Delete old DNS SSHFP records
+  when: sshfp_records is defined and sshfp_records|success
+  local_action: uri method=DELETE
+                url="{{ dynect_api_url }}/SSHFPRecord/{{ management_dns_zone | mandatory
+                     }}/{{ inventory_hostname | mandatory }}/"
+                HEADER_Content-Type="application/json"
+                HEADER_Auth-Token="{{ dynect_session_token }}"
+  ignore_errors: yes
+
+- name: Make DNS SSHFP records
+  when: sshfp_records is defined and sshfp_records|success
+  with_items: sshfp_records.stdout_lines
+  local_action: uri method=POST
+                url="{{ dynect_api_url }}/SSHFPRecord/{{ management_dns_zone | mandatory
+                     }}/{{ inventory_hostname | mandatory }}/"
+                HEADER_Content-Type="application/json"
+                HEADER_Auth-Token="{{ dynect_session_token }}"
+                body='{"rdata":{
+                "algorithm":"{{ item | regex_replace('^[^ ]+ IN SSHFP ([0-9]+) [12] .*$', '\\1') }}",
+                "fptype":"{{ item | regex_replace('^[^ ]+ IN SSHFP [0-9]+ ([12]) .*$', '\\1') }}",
+                "fingerprint":"{{ item | regex_replace('^[^ ]+ IN SSHFP [0-9]+ [12] (.*)$', '\\1') }}"
+                },"ttl":"{{ sshfp_ttl | default(300) }}"}'
+
+- name: Publish the management DNS zone
+  when: dynect_session_result|success and
+        management_dns_zone is defined
+  local_action: uri method=PUT
+                HEADER_Content-Type="application/json"
+                HEADER_Auth-Token="{{ dynect_session_token }}"
+                url="{{ dynect_api_url }}/Zone/{{ management_dns_zone }}"
+                body='{"publish":true}'

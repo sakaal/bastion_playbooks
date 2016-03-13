@@ -1,0 +1,67 @@
+---
+# file: roles/firewall_knock_operator/tasks/main.yml
+#
+# Open UDP port 62201 from anywhere 0.0.0.0/0 to the bastion hosts.
+#
+
+#
+# SPA client (local)
+#
+
+- name: Generate encryption and HMAC keys
+  no_log: True
+  run_once: yes
+  when: fwknop_KEY_BASE64 is not defined or
+        fwknop_HMAC_KEY_BASE64 is not defined
+  local_action: command fwknop --key-gen
+  register: fwknop_keys
+
+- name: Encryption key
+  no_log: True
+  when: not fwknop_keys|skipped and
+        ( item | match('^KEY_BASE64:.*') )
+  with_items: fwknop_keys.stdout_lines
+  set_fact:
+    fwknop_KEY_BASE64: "{{ item | regex_replace('^([^:]+:)\\s*([^\\s]+).*$', '\\\\2') }}"
+
+- name: HMAC key
+  no_log: True
+  when: not fwknop_keys|skipped and
+        ( item | match('^HMAC_KEY_BASE64:.*') )
+  with_items: fwknop_keys.stdout_lines
+  set_fact:
+    fwknop_HMAC_KEY_BASE64: "{{ item | regex_replace('^([^:]+:)\\s*([^\\s]+).*$', '\\\\2') }}"
+
+- name: Set the keys as inventory group variables
+  when: not fwknop_keys|skipped
+  local_action:
+    module: template
+    src:    fwknop_credentials.yml.j2
+    dest:   "{{ inventory_dir }}/group_vars/all/fwknop_credentials.yml"
+
+- name: Encrypt the sensitive inventory group variables
+  when: not fwknop_keys|skipped
+  local_action: shell chdir="{{ inventory_dir }}/group_vars/all"
+                ansible-vault encrypt fwknop_credentials.yml;
+                mv -f fwknop_credentials.yml fwknop_credentials.yml.vault
+
+- name: Delete the .fwknoprc.updated file
+  local_action: file path=~/.fwknoprc.updated state=absent
+
+- name: Set the named configuration stanza
+  no_log: True
+  local_action: command fwknop
+                --access=tcp/22
+                --resolve-ip-https
+                --wget-cmd=/usr/bin/wget
+                --destination="{{ inventory_hostname }}"
+                --use-hmac
+                --verbose
+                --key-base64-rijndael="{{ fwknop_KEY_BASE64 | mandatory }}"
+                --key-base64-hmac="{{ fwknop_HMAC_KEY_BASE64 | mandatory }}"
+                --named-config="{{ inventory_hostname }}"
+                --save-rc-stanza --force-stanza
+
+- name: Remote SPA server
+  become: yes
+  include: remote.yml

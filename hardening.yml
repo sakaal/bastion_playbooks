@@ -1,0 +1,16 @@
+---
+# file: hardening.yml
+#
+# ansible-playbook -v hardening.yml -i hosts
+#
+
+- name: SECURITY HARDENING
+  hosts: bastion
+  gather_facts: yes
+  pre_tasks:
+  - ec2_facts:
+  roles:
+  - ssh_server
+  - kernel_hardening
+  - software_packages
+  - firewall_knock_operator

@@ -1,0 +1,19 @@
+---
+# file: roles/ssh_server/tasks/main.yml
+
+- name: Configure SSH access
+  with_items:
+  - key: "PermitRootLogin"
+    val: "forced-commands-only"
+  - key: "PasswordAuthentication"
+    val: "no"
+  - key: "AllowAgentForwarding"
+    val: "yes"
+  - key: "X11Forwarding"
+    val: "no"
+  become: yes
+  lineinfile: dest=/etc/ssh/sshd_config
+              regexp="^{{ item.key | mandatory }}"
+              line="{{ item.key }} {{ item.val | mandatory }}"
+              state=present
+  notify: Restart sshd

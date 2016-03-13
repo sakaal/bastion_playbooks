@@ -1,0 +1,12 @@
+---
+# file: roles/epel_repository/tasks/epel_release.yml
+
+- name: EPEL release (yum)
+  when: ansible_pkg_mgr == "yum"
+  become: yes
+  yum: name="epel-release" state=present
+
+- name: EPEL release (dnf)
+  when: ansible_pkg_mgr == "dnf"
+  become: yes
+  dnf: name="epel-release" state=present

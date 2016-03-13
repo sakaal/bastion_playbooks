@@ -1,0 +1,16 @@
+---
+# file: roles/software_packages/tasks/main.yml
+
+- name: Manage packages (yum)
+  when: ansible_pkg_mgr == "yum"
+  with_items: "{{ packages | default([]) }}"
+  become: yes
+  yum: name="{{ item.name | mandatory }}" state="{{ item.state | mandatory }}"
+  ignore_errors: yes
+
+- name: Manage packages (dnf)
+  when: ansible_pkg_mgr == "dnf"
+  with_items: "{{ packages | default([]) }}"
+  become: yes
+  dnf: name="{{ item.name | mandatory }}" state="{{ item.state | mandatory }}"
+  ignore_errors: yes

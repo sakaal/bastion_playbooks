@@ -1,0 +1,94 @@
+---
+# file: roles/kernel_hardening/tasks/main.yml
+
+- name: Enable Address Space Layout Randomization (ASLR)
+  become: yes
+  sysctl: name=kernel.randomize_va_space value=2 sysctl_set=yes
+          ignoreerrors=yes
+
+- name: Hide kernel pointers
+  become: yes
+  sysctl: name=kernel.kptr_restrict value=1 sysctl_set=yes
+          ignoreerrors=yes
+
+# Don't worry about the following error <http://wiki.libvirt.org/page/Net.bridge-nf-call_and_sysctl.conf>
+# error: "net.bridge.bridge-nf-call-ip6tables" is an unknown key
+
+- name: Enable TCP SYN Cookie Protection
+  become: yes
+  sysctl: name=net.ipv4.tcp_syncookies value=1 sysctl_set=yes
+          ignoreerrors=yes
+
+- name: Disable IP Source Routing
+  with_items:
+  - key: net.ipv4.conf.all.accept_source_route
+    val: 0
+  - key: net.ipv6.conf.all.accept_source_route
+    val: 0
+  become: yes
+  sysctl: name="{{ item.key | mandatory }}"
+          value="{{ item.val | mandatory }}"
+          sysctl_set=yes
+          ignoreerrors=yes
+
+- name: Disable ICMP Redirect Acceptance
+  with_items:
+  - key: net.ipv4.conf.all.accept_redirects
+    val: 0
+  - key: net.ipv6.conf.all.accept_redirects
+    val: 0
+  become: yes
+  sysctl: name="{{ item.key | mandatory }}"
+          value="{{ item.val | mandatory }}"
+          sysctl_set=yes
+          ignoreerrors=yes
+
+- name: Enable IP Spoofing Protection
+  become: yes
+  sysctl: name=net.ipv4.conf.all.rp_filter value=1 sysctl_set=yes
+          ignoreerrors=yes
+
+- name: Ignore ICMP Broadcast Requests
+  become: yes
+  sysctl: name=net.ipv4.icmp_echo_ignore_all value=1 sysctl_set=yes
+          ignoreerrors=yes
+
+- name: Protect file system soft and hard links
+  with_items:
+  - key: fs.protected_hardlinks
+    val: 1
+  - key: fs.protected_symlinks
+    val: 1
+  become: yes
+  sysctl: name="{{ item.key | mandatory }}"
+          value="{{ item.val | mandatory }}"
+          sysctl_set=yes
+          ignoreerrors=yes
+
+- name: Restrict access to kernel logs
+  become: yes
+  sysctl: name=kernel.dmesg_restrict value=1 sysctl_set=yes
+          ignoreerrors=yes
+
+- name: Limit the number of processes
+  with_items:
+  - regexp: "^[^#].*soft\\s+nproc"
+    line: "* soft nproc 1023"
+  - regexp: "^[^#].*hard\\s+nproc"
+    line: "* hard nproc 8191"
+  become: yes
+  lineinfile: dest=/etc/security/limits.conf
+              regexp="{{ item.regexp | mandatory }}"
+              line="{{ item.line | mandatory }}"
+
+- name: Disable BPF JIT compiler
+  become: yes
+  sysctl: name=net.core.bpf_jit_enable value=0 sysctl_set=yes
+          ignoreerrors=yes
+  ignore_errors: True
+
+#- name: "Enable Yama LSM ptrace scope" # not widely supported yet
+#  become: yes
+#  sysctl: name=kernel.yama.ptrace_scope value=1 sysctl_set=yes
+#          ignoreerrors=yes
+#  ignore_errors: True

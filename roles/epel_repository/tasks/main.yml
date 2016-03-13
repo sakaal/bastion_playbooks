@@ -1,0 +1,11 @@
+---
+# file: roles/epel_repository/tasks/main.yml
+
+- name: CentOS
+  when: ansible_distribution == "CentOS" and
+        {{ ansible_distribution_version | version_compare("5.0", ">=") }}
+  include: epel_release.yml
+
+- name: Amazon Linux
+  when: ansible_distribution == "Amazon"
+  include: epel_release.yml

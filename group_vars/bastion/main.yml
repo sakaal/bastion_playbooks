@@ -1,0 +1,33 @@
+---
+# file: group_vars/bastion/main.yml
+
+#
+# Packages to install or remove on bastion hosts
+#
+packages:
+#
+- name: inotify-tools
+  state: present
+- name: nano
+  state: present
+#
+- name: authconfig
+  state: absent
+- name: gsettings-desktop-schemas
+  state: absent
+- name: glib-networking
+  state: absent
+- name: libsoup
+  state: absent
+- name: microcode_ctl
+  state: absent
+- name: newt
+  state: absent
+- name: newt-python
+  state: absent
+- name: postfix
+  state: absent
+- name: slang
+  state: absent
+- name: xfsprogs
+  state: absent

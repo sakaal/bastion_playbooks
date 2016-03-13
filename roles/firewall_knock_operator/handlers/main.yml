@@ -1,0 +1,10 @@
+---
+# file: roles/firewall_knock_operator/handlers/main.yml
+
+- name: Restart fwknopd
+  become: yes
+  service: name=fwknopd.service state=restarted
+
+- name: Reload firewalld
+  become: yes
+  command: firewall-cmd --reload

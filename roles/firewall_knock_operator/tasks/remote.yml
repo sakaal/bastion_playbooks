@@ -1,0 +1,66 @@
+---
+# file: roles/firewall_knock_operator/tasks/remote.yml
+
+- name: List packages
+  set_fact:
+    fwknop_packages:
+    - firewalld
+    - fwknop
+    - wget
+
+- name: Install packages (yum)
+  when: ansible_pkg_mgr == "yum"
+  with_items: fwknop_packages
+  yum: name="{{ item }}" state=present
+
+- name: Install packages (dnf)
+  when: ansible_pkg_mgr == "dnf"
+  with_items: fwknop_packages
+  dnf: name="{{ item }}" state=present
+
+- name: Set the keys in fwknopd server access configuration
+  no_log: True
+  with_items: 
+  - key: KEY_BASE64
+    val: "{{ fwknop_KEY_BASE64 | mandatory }}"
+  - key: HMAC_KEY_BASE64
+    val: "{{ fwknop_HMAC_KEY_BASE64 | mandatory }}"
+  lineinfile:
+    dest:   /etc/fwknop/access.conf    
+    insertafter: "^SOURCE\\s+ANY"
+    regexp: "^{{ item.key | mandatory }}\\s+.*$"
+    line:   "{{ item.key }}        {{ item.val | mandatory }}"
+    state: present
+  notify:
+  - Restart fwknopd
+
+- name: Enable and start the firewalld service
+  with_items:
+  - firewalld
+  service: name="{{ item }}" enabled=yes state=started
+
+- name: Enable the fwknopd service
+  with_items:
+  - fwknopd.service
+  service: name="{{ item }}" enabled=yes
+
+- name: Start the fwknopd service
+  with_items:
+  - fwknopd.service
+  service: name="{{ item }}" state=started
+
+- name: Default network
+  set_fact:
+    default_ipv4_net_mask: "{{ ansible_default_ipv4.network }}/{{ ansible_default_ipv4.netmask }}"
+
+- name: Allow SSH access from within the default network
+  firewalld: rich_rule='rule family="ipv4"
+                        source address="{{ default_ipv4_net_mask | ipaddr('net') }}"
+                        service name="ssh"
+                        accept'
+             state=enabled permanent=yes
+  notify: Reload firewalld
+
+- name: Deny SSH access from anywhere else
+  firewalld: service=ssh state=disabled permanent=yes
+  notify: Reload firewalld

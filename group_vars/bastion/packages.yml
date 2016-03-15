@@ -1,11 +1,13 @@
 ---
-# file: group_vars/bastion/main.yml
+# file: group_vars/bastion/packages.yml
 
 #
 # Packages to install or remove on bastion hosts
 #
 packages:
 #
+- name: deltarpm
+  state: present
 - name: inotify-tools
   state: present
 - name: nano

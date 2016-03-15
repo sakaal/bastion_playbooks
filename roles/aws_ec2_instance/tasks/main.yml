@@ -102,7 +102,7 @@
   register: ec2_result
 
 - name: EC2 instance launch result
-  when: not ec2_result|skipped
+  when: ec2_result.instances | length > 0
   debug: msg="{{ ec2_result.instances }}"
 
 - name: Assign Elastic IP
@@ -117,6 +117,7 @@
     region:         "{{ ec2_region | mandatory }}"
 
 - name: Connect via the Elastic IP assigned on launch
+  when: ec2_result.instances | length > 0
   set_fact: ansible_ssh_host="{{ ec2_elastic_ip.public_ip | mandatory }}"
             ansible_ssh_port=22
             ansible_ssh_user="{{ ec2_image.user | mandatory }}"
@@ -136,7 +137,7 @@
                 -o StrictHostKeyChecking=no
                 -o PasswordAuthentication=no
                 {{ hostvars[ inventory_hostname ].ansible_ssh_user | mandatory
-                }}@{{ ansible_ssh_host }}
+                }}@{{ ansible_ssh_host | default( inventory_hostname ) }}
                 echo hello
   register: ssh_echo
   retries: 20
@@ -157,7 +158,7 @@
                 -o StrictHostKeyChecking=no
                 -o PasswordAuthentication=no
                 {{ hostvars[ inventory_hostname ].ansible_ssh_user | mandatory
-                }}@{{ ansible_ssh_host }}
+                }}@{{ ansible_ssh_host | default( inventory_hostname ) }}
                 ssh-keygen -r {{ inventory_hostname }}
   register: sshfp_records
   changed_when: False

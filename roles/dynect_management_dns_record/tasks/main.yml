@@ -2,7 +2,8 @@
 # file: roles/dynect_management_dns_record/tasks/main.yml
 
 - name: Delete existing management DNS A records
-  when: dynect_session_result|success
+  when: dynect_session_result|success and
+        ansible_ssh_host is defined and ansible_ssh_host|ipaddr
   local_action: uri method=DELETE
                 url="{{ dynect_api_url }}/ARecord/{{ management_dns_zone | mandatory
                      }}/{{ inventory_hostname | mandatory }}/"
@@ -14,7 +15,8 @@
 # DynECT ZoneAddNode user permission is required to add records. 
 #
 - name: Make management DNS A records
-  when: dynect_session_result|success
+  when: dynect_session_result|success and
+        ansible_ssh_host is defined and ansible_ssh_host|ipaddr
   local_action: uri method=POST
                 url="{{ dynect_api_url }}/ARecord/{{ management_dns_zone | mandatory
                      }}/{{ inventory_hostname }}."

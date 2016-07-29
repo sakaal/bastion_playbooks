@@ -1,4 +1,3 @@
----
 # file: aws_ec2.yml
 #
 # Manages AWS EC2 instances. Usually run as:
@@ -10,6 +9,7 @@
 # bug that prevents the ec2 module from launching an instance with
 # encrypted root volume.
 #
+---
 
 - name: Instances
   hosts: bastion

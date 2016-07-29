@@ -1,0 +1,23 @@
+# file: roles/ssh_known_hosts/tasks/main.yml
+---
+
+- name: Remove previously known hosts
+  with_nested:
+  - local_users | default([])
+  - ssh_known_hosts | default([])
+  shell: "{% for host in item.1.hosts %}
+         ssh-keygen -R {{ host }} -f ~{{ item.0.user }}/.ssh/known_hosts;
+         {% endfor %}
+         rm -f ~{{ item.0.user }}/.ssh/known_hosts.old;"
+
+- name: Add known hosts
+  with_nested:
+  - local_users | default([])
+  - ssh_known_hosts | default([])
+  lineinfile:
+    dest: "{{ '~' + item.0.user | expanduser }}/.ssh/known_hosts"
+    line: "{{ item.1.hosts | join(',') | mandatory }} {{ item.1.key | mandatory }}"
+    create: yes
+    owner: "{{ item.user | mandatory }}"
+    group: "{{ item.group | mandatory }}"
+    mode: 0600

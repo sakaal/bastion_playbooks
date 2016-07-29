@@ -1,0 +1,10 @@
+# file: roles/updates_auto/handlers/main.yml
+---
+
+- name: restart yum-cron
+  become: yes
+  service: name=yum-cron state="{{ yum_cron_state | default('restarted') }}"
+
+- name: restart dnf-automatic.timer
+  become: yes
+  service: name="dnf-automatic.timer" state=restarted

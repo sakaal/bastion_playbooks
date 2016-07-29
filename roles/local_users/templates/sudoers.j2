@@ -1,0 +1,6 @@
+# Managed by {{ role_path | replace(playbook_dir|dirname+'/', '') }}
+
+# User rules for {{ item.user }}
+{% for line in item.sudo | mandatory %}
+{{ item.user }} {{ line }}
+{% endfor %}

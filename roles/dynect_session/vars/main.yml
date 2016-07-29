@@ -1,4 +1,4 @@
----
 # file: roles/dynect_session/vars/main.yml
+---
 
 dynect_api_url: "https://api2.dynect.net/REST"

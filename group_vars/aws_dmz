@@ -1,8 +1,8 @@
----
 # file: group_vars/aws_dmz
 #
 # AWS DMZ tiers
 #
+---
 
 ec2_assign_public_ip: yes
 

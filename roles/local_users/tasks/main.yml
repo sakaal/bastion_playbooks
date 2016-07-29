@@ -1,0 +1,99 @@
+# file: roles/local_users/tasks/main.yml
+---
+
+- name: Sanity check local user list
+  with_items: local_users | default([])
+  assert:
+    that:
+    - item.user != "root"
+    - item.uid > 99
+
+- name: Add groups
+  with_items: local_groups | selectattr("state", "equalto", "present") | list
+  become: yes
+  group: name="{{ item.name | mandatory }}"
+         gid="{{ item.gid | mandatory }}"
+         system="{{ item.system | default('no') | bool }}"
+         state="present"
+
+- name: Minimal skeleton
+  with_items:
+  - .mozilla
+  become: yes
+  file: name="/etc/skel/{{ item }}" state=absent
+
+- name: Manage users
+  with_items: local_users | default([])
+  when: item.user != ansible_ssh_user
+  become: yes
+  user: name="{{ item.user | mandatory }}"
+        uid="{{ item.uid | mandatory }}"
+        comment="{{ item.comment | default('') }}"
+        append=yes
+        group="{{ item.group | mandatory }}"
+        groups="{{ item.groups | join(',') }}"
+        shell="{{ item.shell | default('/bin/bash') }}"
+        state="{{ item.state | mandatory }}"
+
+- name: Remove home directory
+  with_items: local_users | selectattr("state", "equalto", "absent") | list
+  when: item.user != ansible_ssh_user
+  become: yes
+  file: state=absent
+        dest=/home/{{ item.user | mandatory }}
+
+- name: Home directory owner and group
+  with_items: local_users | selectattr("state", "equalto", "present") | list
+  become: yes
+  file: state=directory
+        dest=~{{ item.user | mandatory }}
+        owner="{{ item.user }}"
+        group="{{ item.group }}"
+        mode="u=rwx,g=,o="
+
+- name: Apply the skeleton
+  with_nested:
+  - local_users | selectattr("state", "equalto", "present") | list
+  - - .bash_logout
+    - .bash_profile
+    - .bashrc
+  become: yes
+  shell: chdir=~{{ item.0.user | mandatory }} creates={{ item.1 }}
+         cp -nr /etc/skel/{{ item.1 }} .;
+         chown {{ item.0.user | mandatory }}:{{ item.0.group | mandatory }} {{ item.1 }};
+
+- name: Remove groups
+  with_items: local_groups | selectattr("state", "equalto", "absent") | list
+  when: item.name != ansible_ssh_user
+  become: yes
+  group: name="{{ item.name | mandatory }}"
+         gid="{{ item.gid | mandatory }}"
+         system="{{ item.system | default('no') | bool }}"
+         state="absent"
+
+- name: SSH authorized keys
+  with_subelements:
+  - local_users | selectattr("state", "equalto", "present") | list
+  - authorized_keys
+  become: yes
+  authorized_key: user="{{ item.0.user | mandatory }}"
+                  key="{{ item.1.key | mandatory }}"
+                  state="{{ item.1.state | default('present')}}"
+
+- name: Sudo access
+  with_items: local_users | selectattr("state", "equalto", "present") | list
+  when: item.sudo is defined
+  become: yes
+  template: src=sudoers.j2 dest=/etc/sudoers.d/90-local-{{ item.user }}
+            owner=root group=root mode=0440 validate="visudo -cf %s"
+
+- name: Remove sudo access
+  with_items: local_users | selectattr("state", "equalto", "absent") | list
+  when: item.user != ansible_ssh_user and (
+        item.state == "absent" or
+        item.sudo is not defined or
+        item.sudo | length == 0
+        )
+  become: yes
+  file: dest=/etc/sudoers.d/90-local-{{ item.user }}
+        state=absent

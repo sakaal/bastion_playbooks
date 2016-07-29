@@ -1,5 +1,5 @@
----
 # file: roles/epel_repository/tasks/epel_release.yml
+---
 
 - name: EPEL release (yum)
   when: ansible_pkg_mgr == "yum"

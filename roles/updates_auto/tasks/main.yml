@@ -1,0 +1,8 @@
+# file: roles/updates_auto/tasks/main.yml
+---
+
+- when: ansible_pkg_mgr == "yum"
+  include: yum.yml
+
+- when: ansible_pkg_mgr == "dnf"
+  include: dnf.yml

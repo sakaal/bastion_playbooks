@@ -1,0 +1,8 @@
+# file: group_vars/bastion/main.yml
+---
+
+#
+# Keep bastion servers up to date
+#
+dnf_automatic_upgrade_type: default
+yum_cron_update_cmd: default

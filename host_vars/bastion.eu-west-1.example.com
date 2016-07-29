@@ -1,5 +1,5 @@
----
 # file: host_vars/bastion.eu-west-1.example.com
+---
 
 #ec2_elastic_ip:
 #  allocation_id: eipalloc-########

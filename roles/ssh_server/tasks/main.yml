@@ -1,5 +1,5 @@
----
 # file: roles/ssh_server/tasks/main.yml
+---
 
 - name: Configure SSH access
   with_items:

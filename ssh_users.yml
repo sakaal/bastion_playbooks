@@ -1,0 +1,12 @@
+# file: ssh_users.yml
+#
+# ansible-playbook ssh_users.yml -i hosts -l bastion
+#
+---
+
+- name: SSH USERS AND GROUPS
+  hosts: all
+  gather_facts: yes
+  roles:
+  - local_users
+  - ssh_known_hosts

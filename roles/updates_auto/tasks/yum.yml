@@ -1,0 +1,79 @@
+# file: roles/updates_auto/tasks/main.yml
+---
+
+- assert:
+    that:
+    - ansible_pkg_mgr == "yum"
+
+#
+# Conflicts may occur with yum-cron install, if the system
+# hasn't been updated for a while, so we must update all
+# before installing yum-cron.
+#
+
+#
+# yum update or yum install may fail with package conflict
+# between 64 bit and 32 bit package architectures
+# https://access.redhat.com/solutions/158883
+#
+
+- name: Install yum-utils
+  with_items:
+  - yum-utils
+  become: yes
+  yum: name={{ item }} state=present
+
+- name: Remove duplicate packages
+  become: yes
+  command: package-cleanup -y --cleandupes
+  changed_when: no
+
+- name: Configure yum to require exact architecture
+  become: yes
+  lineinfile: dest="/etc/yum.conf"
+              regexp="^#?exactarch=.*$"
+              line="exactarch=1"
+
+- name: yum clean all
+  become: yes
+  command: yum -y clean all
+  changed_when: no
+
+- name: Update all packages
+  become: yes
+  yum: name=* state=latest
+
+#
+# End https://access.redhat.com/solutions/158883
+#
+
+- name: Install yum-cron
+  when: yum_cron_enabled|default('yes')|bool
+  with_items:
+  - yum-cron
+  become: yes
+  yum: name={{ item }} state=latest
+
+- name: Configure yum-cron
+  when: yum_cron_enabled|default('yes')|bool
+  with_items:
+  - key: "update_cmd"
+    val: "{{ yum_cron_update_cmd | default('minimal-security') }}"
+  - key: "download_updates"
+    val: "yes"
+  - key: "apply_updates"
+    val: "yes"
+  - key: "random_sleep"
+    val: "240" # minutes
+  become: yes
+  lineinfile:
+    dest=/etc/yum/yum-cron.conf
+    regexp='^{{ item.key | mandatory }}\s'
+    line='{{ item.key | mandatory }} = {{ item.val | mandatory }}'
+  notify:
+  - restart yum-cron
+
+- name: Control the yum-cron service
+  become: yes
+  service: name=yum-cron enabled="{{ yum_cron_enabled | default('yes') }}"
+           state="{{ yum_cron_state | default('started') }}"

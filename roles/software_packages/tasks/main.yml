@@ -1,5 +1,5 @@
----
 # file: roles/software_packages/tasks/main.yml
+---
 
 - name: Manage packages (yum)
   when: ansible_pkg_mgr == "yum"

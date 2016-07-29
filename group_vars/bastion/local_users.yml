@@ -1,0 +1,48 @@
+# file: group_vars/all/local_users.yml
+#
+# Make an ansible-vault encrypted copy of this file:
+#
+# cp local_users.yml local_users.yml.vault
+# ansible-vault encrypt local_users.yml.vault
+#
+# Uncomment and set the accounts in the encrypted file.
+#
+---
+
+local_groups:
+#
+#- name: centos
+#  gid: 1000
+#  system: no
+#  state: absent
+#
+#- name:
+#  gid:
+#  system: no
+#  state: present
+
+local_users:
+#
+#- user: centos
+#  uid: 1000
+#  group: centos
+#  groups:
+#  - adm
+#  - systemd-journal
+#  - wheel
+#  state: absent
+#
+#- user:
+#  uid: 1001
+#  group:
+#  groups:
+#  - adm
+#  - systemd-journal
+#  - wheel
+#  authorized_keys:
+#  - key: ""
+#    state: present
+#  state: present
+#  sudo:
+#  - 'ALL=(ALL) NOPASSWD:ALL'
+

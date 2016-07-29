@@ -1,0 +1,8 @@
+# file: updates_auto/defaults/main.yml
+---
+
+#
+# Once dnf-automatic is stable on CentOS 7 migrate by disabling yum cron:
+#
+#yum_cron_state: stopped
+#yum_cron_enabled: no

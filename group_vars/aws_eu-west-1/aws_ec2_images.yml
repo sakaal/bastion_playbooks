@@ -1,9 +1,8 @@
----
 # file: group_vars/aws_eu-west-1/aws_ec2_images.yml
-
 #
 # AWS Region EU Ireland AMIs
 #
+---
 
 #
 # You must accept the terms of each AMI you use from the AWS Marketplace

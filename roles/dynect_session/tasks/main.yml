@@ -1,5 +1,5 @@
----
 # file: roles/dynect_session/tasks/main.yml
+---
 
 # DynECT DNS API session management
 

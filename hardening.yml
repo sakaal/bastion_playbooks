@@ -1,8 +1,8 @@
----
 # file: hardening.yml
 #
 # ansible-playbook -v hardening.yml -i hosts
 #
+---
 
 - name: SECURITY HARDENING
   hosts: bastion
@@ -13,4 +13,5 @@
   - ssh_server
   - kernel_hardening
   - software_packages
+  - updates_auto
   - firewall_knock_operator

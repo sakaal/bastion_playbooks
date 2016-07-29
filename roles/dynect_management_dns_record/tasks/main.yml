@@ -1,5 +1,5 @@
----
 # file: roles/dynect_management_dns_record/tasks/main.yml
+---
 
 - name: Delete existing management DNS A records
   when: dynect_session_result|success and

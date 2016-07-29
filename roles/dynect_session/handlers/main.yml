@@ -1,5 +1,5 @@
----
 # file: roles/dynect_session/handlers/main.yml
+---
 
 - name: End DynECT session
   local_action: uri method=DELETE

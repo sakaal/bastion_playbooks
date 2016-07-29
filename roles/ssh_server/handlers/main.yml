@@ -1,5 +1,5 @@
----
 # file: roles/ssh_server/handlers/main.yml
+---
 
 - name: Restart sshd
   become: yes

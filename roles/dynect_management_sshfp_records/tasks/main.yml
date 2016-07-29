@@ -1,9 +1,8 @@
----
 # file: roles/dynect_management_sshfp_records/tasks/main.yml
-
 #
 # Some other role must set the sshfp_records before applying this role.
 #
+---
 
 - name: Delete old DNS SSHFP records
   when: sshfp_records is defined and sshfp_records|success

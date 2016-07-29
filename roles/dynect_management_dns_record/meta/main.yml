@@ -1,5 +1,5 @@
----
 # file: roles/dynect_management_dns_record/meta/main.yml
+---
 
 dependencies:
 - dynect_session

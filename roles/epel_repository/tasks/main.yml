@@ -1,5 +1,5 @@
----
 # file: roles/epel_repository/tasks/main.yml
+---
 
 - name: CentOS
   when: ansible_distribution == "CentOS" and

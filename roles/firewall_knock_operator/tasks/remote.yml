@@ -1,5 +1,5 @@
----
 # file: roles/firewall_knock_operator/tasks/remote.yml
+---
 
 - name: List packages
   set_fact:

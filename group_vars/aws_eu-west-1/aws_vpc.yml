@@ -1,9 +1,8 @@
----
 # file: group_vars/aws_eu-west-1/aws_vpc.yml
-
 #
 # AWS Region EU Ireland
 #
+---
 
 ec2_region: eu-west-1
 

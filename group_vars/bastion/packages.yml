@@ -1,5 +1,5 @@
----
 # file: group_vars/bastion/packages.yml
+---
 
 #
 # Packages to install or remove on bastion hosts
@@ -12,12 +12,42 @@ packages:
   state: present
 - name: nano
   state: present
+- name: screen
+  state: present
 #
+- name: adobe-source-han-sans-tw-fonts
+  state: absent
 - name: authconfig
+  state: absent
+- name: cheese
+  state: absent
+- name: empathy
+  state: absent
+- name: evolution
+  state: absent
+- name: firefox
+  state: absent
+- name: foomatic-db-ppds
+  state: absent
+- name: ghostscript-core
+  state: absent
+- name: glib-networking
+  state: absent
+- name: gnome-backgrounds
+  state: absent
+- name: gnome-contacts
+  state: absent
+- name: gnome-font-viewer
+  state: absent
+- name: gnome-user-docs
+  state: absent
+- name: gnome-weather
   state: absent
 - name: gsettings-desktop-schemas
   state: absent
-- name: glib-networking
+- name: adobe-source-han-sans-cn-fonts
+  state: absent
+- name: libreoffice-core
   state: absent
 - name: libsoup
   state: absent
@@ -28,6 +58,12 @@ packages:
 - name: newt-python
   state: absent
 - name: postfix
+  state: absent
+- name: qt
+  state: absent
+- name: rhythmbox
+  state: absent
+- name: shotwell
   state: absent
 - name: slang
   state: absent

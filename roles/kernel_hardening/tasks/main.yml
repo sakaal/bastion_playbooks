@@ -1,5 +1,5 @@
----
 # file: roles/kernel_hardening/tasks/main.yml
+---
 
 - name: Enable Address Space Layout Randomization (ASLR)
   become: yes

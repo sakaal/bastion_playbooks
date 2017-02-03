@@ -3,7 +3,7 @@
 
 - name: Delete existing management DNS A records
   when: dynect_session_result|success and
-        ansible_ssh_host is defined and ansible_ssh_host|ipaddr
+        ansible_host is defined and ansible_host|ipaddr
   local_action: uri method=DELETE
                 url="{{ dynect_api_url }}/ARecord/{{ management_dns_zone | mandatory
                      }}/{{ inventory_hostname | mandatory }}/"
@@ -16,10 +16,10 @@
 #
 - name: Make management DNS A records
   when: dynect_session_result|success and
-        ansible_ssh_host is defined and ansible_ssh_host|ipaddr
+        ansible_host is defined and ansible_host|ipaddr
   local_action: uri method=POST
                 url="{{ dynect_api_url }}/ARecord/{{ management_dns_zone | mandatory
                      }}/{{ inventory_hostname }}."
                 HEADER_Content-Type="application/json"
                 HEADER_Auth-Token="{{ dynect_session_token }}"
-                body='{"rdata":{"address":"{{ ansible_ssh_host }}"}}'
+                body='{"rdata":{"address":"{{ ansible_host }}"}}'

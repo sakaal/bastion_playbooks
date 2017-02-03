@@ -2,4 +2,5 @@
 .project
 
 hosts
+*.retry
 *.vault

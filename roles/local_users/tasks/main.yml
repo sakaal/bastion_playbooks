@@ -24,7 +24,7 @@
 
 - name: Manage users
   with_items: local_users | default([])
-  when: item.user != ansible_ssh_user
+  when: item.user != ansible_user
   become: yes
   user: name="{{ item.user | mandatory }}"
         uid="{{ item.uid | mandatory }}"
@@ -37,7 +37,7 @@
 
 - name: Remove home directory
   with_items: local_users | selectattr("state", "equalto", "absent") | list
-  when: item.user != ansible_ssh_user
+  when: item.user != ansible_user
   become: yes
   file: state=absent
         dest=/home/{{ item.user | mandatory }}
@@ -64,7 +64,7 @@
 
 - name: Remove groups
   with_items: local_groups | selectattr("state", "equalto", "absent") | list
-  when: item.name != ansible_ssh_user
+  when: item.name != ansible_user
   become: yes
   group: name="{{ item.name | mandatory }}"
          gid="{{ item.gid | mandatory }}"
@@ -89,7 +89,7 @@
 
 - name: Remove sudo access
   with_items: local_users | selectattr("state", "equalto", "absent") | list
-  when: item.user != ansible_ssh_user and (
+  when: item.user != ansible_user and (
         item.state == "absent" or
         item.sudo is not defined or
         item.sudo | length == 0

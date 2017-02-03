@@ -1,8 +1,8 @@
----
 # file: roles/aws_ec2_instance/tasks/main.yml
 #
 # Provision an Amazon Web Services (AWS) Elastic Compute Cloud (EC2) instance
 #
+---
 
 - name: AWS EC2 access credentials
   assert:
@@ -118,14 +118,14 @@
 
 - name: Connect via the Elastic IP assigned on launch
   when: ec2_result.instances | length > 0
-  set_fact: ansible_ssh_host="{{ ec2_elastic_ip.public_ip | mandatory }}"
-            ansible_ssh_port=22
-            ansible_ssh_user="{{ ec2_image.user | mandatory }}"
+  set_fact: ansible_host="{{ ec2_elastic_ip.public_ip | mandatory }}"
+            ansible_port=22
+            ansible_user="{{ ec2_image.user | mandatory }}"
 
 - name: Locally remove previous SSH known host keys
   with_items: ec2_result.instances | default([])
   local_action: known_hosts
-                host="{{ hostvars[ inventory_hostname ].ansible_ssh_host }}"
+                host="{{ hostvars[ inventory_hostname ].ansible_host }}"
                 state=absent
 
 #
@@ -136,8 +136,8 @@
   local_action: command ssh -A
                 -o StrictHostKeyChecking=no
                 -o PasswordAuthentication=no
-                {{ hostvars[ inventory_hostname ].ansible_ssh_user | mandatory
-                }}@{{ ansible_ssh_host | default( inventory_hostname ) }}
+                {{ hostvars[ inventory_hostname ].ansible_user | mandatory
+                }}@{{ ansible_host | default( inventory_hostname ) }}
                 echo hello
   register: ssh_echo
   retries: 20
@@ -157,8 +157,8 @@
   local_action: command ssh -A
                 -o StrictHostKeyChecking=no
                 -o PasswordAuthentication=no
-                {{ hostvars[ inventory_hostname ].ansible_ssh_user | mandatory
-                }}@{{ ansible_ssh_host | default( inventory_hostname ) }}
+                {{ hostvars[ inventory_hostname ].ansible_user | mandatory
+                }}@{{ ansible_host | default( inventory_hostname ) }}
                 ssh-keygen -r {{ inventory_hostname }}
   register: sshfp_records
   changed_when: False

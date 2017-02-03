@@ -55,4 +55,4 @@ aws_eu-west-1b_dmz__bastion
 aws_eu-west-1c_dmz__bastion
 
 [aws_eu-west-1c_dmz__bastion]
-#bastion.eu-west-1.example.com ec2_state=running ansible_ssh_user="{{ ec2_image.user | mandatory }}"
+#bastion.eu-west-1.example.com ec2_state=running ansible_user="{{ ec2_image.user | mandatory }}"
